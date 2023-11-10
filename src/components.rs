@@ -1,7 +1,11 @@
+use std::any::{Any, TypeId};
 use color_eyre::eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::layout::Rect;
 use tokio::sync::mpsc::UnboundedSender;
+use dyn_clone::DynClone;
+
+
 
 use crate::{
   action::Action,
@@ -9,13 +13,13 @@ use crate::{
   tui::{Event, Frame},
 };
 
-pub mod fps;
 pub mod home;
+pub mod fps;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 /// Implementors of this trait can be registered with the main application loop and will be able to receive events,
 /// update state, and be rendered on the screen.
-pub trait Component {
+pub trait Component: Sync + DynClone {
   /// Register an action handler that can send actions for processing if necessary.
   ///
   /// # Arguments
@@ -121,4 +125,17 @@ pub trait Component {
   ///
   /// * `Result<()>` - An Ok result or an error.
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()>;
+}
+
+/// 为了能够在HashMap中比较Component，实现了PartialEq
+/// 仅仅比较TypeId
+impl PartialEq for dyn Component {
+  ///compare TypeId only
+  fn eq(&self, other: &Self) -> bool {
+    self.type_id() == other.type_id()
+  }
+  ///compare TypeId only
+  fn ne(&self, other: &Self) -> bool {
+    self.type_id() != other.type_id()
+  }
 }

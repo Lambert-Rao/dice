@@ -3,14 +3,10 @@ use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
+use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{
-  action::Action,
-  components::{home::Home, fps::FpsCounter, Component},
-  config::Config,
-  mode::Mode,
-  tui,
-};
+use crate::{action::Action, components::{home::Home, fps::FpsCounter, Component}, config::Config, mode, mode::Mode, tui};
+use crate::mode::MODE_COMPONENTS;
 
 pub struct App {
   pub config: Config,
@@ -32,7 +28,7 @@ impl App {
     Ok(Self {
       tick_rate,
       frame_rate,
-      components: vec![Box::new(home), Box::new(fps)],
+      components: vec![Box::new(home)],
       should_quit: false,
       should_suspend: false,
       config,
@@ -59,7 +55,6 @@ impl App {
     for component in self.components.iter_mut() {
       component.init(tui.size()?)?;
     }
-
     loop {
       if let Some(e) = tui.next().await {
         match e {
@@ -126,6 +121,49 @@ impl App {
               }
             })?;
           },
+          Action::Mode(new_mode) => {
+
+            // 获取当前模式和新模式对应的组件
+            // let curr_components = mode::MODE_COMPONENTS.get(&self.mode).unwrap();
+            // let new_components = mode::MODE_COMPONENTS.get(&new_mode).unwrap();
+            //
+            // // 过滤出两者共有的组件
+            // let mut retained:Vec<Box<dyn Component>> = Vec::new();
+            // for component in &mut self.components {
+            //   if curr_components.contains(component) && new_components.contains(component) {
+            //     //TODO: 显然有问题，要放入之前的component
+            //     retained.push(dyn_clone::clone_box(&**component));
+            //   }
+            // }
+            //
+            //
+            // // 加载新模式独有的组件
+            // for component in new_components {
+            //   if !curr_components.contains(component) {
+            //     retained.push(dyn_clone::clone_box(&**component));
+            //   }
+            // }
+            let mut retained:Vec<Box<dyn Component>> = Vec::new();
+            for component in MODE_COMPONENTS.get(&new_mode).unwrap() {
+              retained.push(dyn_clone::clone_box(&**component));
+            }
+            // 更新组件列表和模式
+            self.components = retained;
+            self.mode = new_mode;
+
+            for component in self.components.iter_mut() {
+              component.register_action_handler(action_tx.clone())?;
+            }
+
+            for component in self.components.iter_mut() {
+              component.register_config_handler(self.config.clone())?;
+            }
+
+            for component in self.components.iter_mut() {
+              component.init(tui.size()?)?;
+            }
+          }
+
           _ => {},
         }
         for component in self.components.iter_mut() {

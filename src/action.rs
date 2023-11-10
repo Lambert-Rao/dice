@@ -4,6 +4,8 @@ use serde::{
   de::{self, Deserializer, Visitor},
   Deserialize, Serialize,
 };
+use crate::components::home::HomeAction;
+use crate::mode::Mode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum Action {
@@ -16,6 +18,8 @@ pub enum Action {
   Refresh,
   Error(String),
   Help,
+  Home(HomeAction),
+  Mode(Mode),
 }
 
 impl<'de> Deserialize<'de> for Action {
