@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::components::Component;
 use crate::components::home::Home;
 use crate::components::fps::FpsCounter;
+use crate::components::game::Dialog;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Mode {
@@ -27,7 +28,7 @@ lazy_static! {
         let mut map = HashMap::new();
         let homevec:Vec<Box<dyn Component>> = vec![Box::new(Home::new())];
         map.insert(Mode::Home, homevec);
-        let gamevec:Vec<Box<dyn Component>> = vec![Box::new(FpsCounter::new())];
+        let gamevec:Vec<Box<dyn Component>> = vec![Box::new(Dialog::new(),FpsCounter::new())];
         map.insert(Mode::Game,gamevec);
         map
     };
